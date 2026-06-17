@@ -14,6 +14,7 @@ public sealed class WeeklyReportService(
     {
         var user = await currentUserService.GetRequiredUserAsync(ct);
         return await dbContext.WeeklyReports
+            .Include(w => w.Entries)
             .Where(w => w.UserId == user.Id)
             .OrderByDescending(w => w.Year)
             .ThenByDescending(w => w.CalendarWeek)
@@ -32,6 +33,7 @@ public sealed class WeeklyReportService(
     {
         var user = await currentUserService.GetRequiredUserAsync(ct);
         var existing = await dbContext.WeeklyReports
+            .Include(w => w.Entries)
             .FirstOrDefaultAsync(w => w.UserId == user.Id && w.Year == year && w.CalendarWeek == week, ct);
 
         if (existing is not null) return existing;
@@ -43,9 +45,10 @@ public sealed class WeeklyReportService(
             UserId = user.Id,
         };
         dbContext.WeeklyReports.Add(report);
+        await dbContext.SaveChangesAsync(ct);
 
         var weekStart = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
-        var weekEnd = weekStart.AddDays(5);
+        var weekEnd = weekStart.AddDays(7);
         var entries = await dbContext.ReportEntries
             .Where(e => e.UserId == user.Id && e.Date >= weekStart && e.Date < weekEnd && e.WeeklyReportId == null)
             .ToListAsync(ct);
@@ -54,10 +57,6 @@ public sealed class WeeklyReportService(
         {
             entry.WeeklyReportId = report.Id;
         }
-
-        await dbContext.SaveChangesAsync(ct);
-
-        entries.ForEach(e => e.WeeklyReportId = report.Id);
         await dbContext.SaveChangesAsync(ct);
 
         report.Entries = entries;

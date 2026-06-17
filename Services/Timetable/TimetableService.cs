@@ -11,8 +11,10 @@ public sealed class TimetableService(
 {
     public async Task<List<TimetableEntry>> GetTimetableAsync(string school, string className, CancellationToken ct = default)
     {
+        var schoolLower = school.Trim().ToLowerInvariant();
+        var classLower = className.Trim().ToLowerInvariant();
         return await dbContext.TimetableEntries
-            .Where(t => t.School == school && t.ClassName == className)
+            .Where(t => t.School.ToLower() == schoolLower && t.ClassName.ToLower() == classLower)
             .OrderBy(t => t.DayOfWeek)
             .ThenBy(t => t.Period)
             .ToListAsync(ct);

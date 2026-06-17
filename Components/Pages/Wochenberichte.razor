@@ -11,16 +11,13 @@
 </div>
 
 <div class="card">
-    <div class="form-row">
-        <div class="form-group">
-            <label>Woche erstellen</label>
-            <div class="inline-form">
-                <input type="number" @bind="newYear" min="2024" max="2030" style="width:100px" />
-                <span>KW</span>
-                <input type="number" @bind="newWeek" min="1" max="53" style="width:80px" />
-                <button class="btn btn-primary btn-sm" @onclick="CreateReport">Erstellen</button>
-            </div>
-        </div>
+    <h3>Wochenbericht erstellen</h3>
+    <p class="text-muted" style="font-size:.85rem;margin-bottom:12px">Erstelle einen Wochenbericht. Alle Tageseinträge der gewählten Woche werden automatisch zugeordnet.</p>
+    <div class="inline-form">
+        <input type="number" @bind="newYear" min="2024" max="2030" style="width:100px" />
+        <span>KW</span>
+        <input type="number" @bind="newWeek" min="1" max="53" style="width:80px" />
+        <button class="btn btn-primary btn-sm" @onclick="CreateReport">Erstellen</button>
     </div>
 </div>
 
@@ -35,29 +32,70 @@ else
     <div class="reports-list mt-3">
         @foreach (var report in reports)
         {
-            <div class="card report-card">
+            <div class="card report-card" @onclick="() => ToggleExpand(report.Id)" style="cursor:pointer">
                 <div class="report-header">
                     <div>
                         <strong>KW @report.CalendarWeek / @report.Year</strong>
                         <span class="badge badge-@report.Status.ToLower()">@report.Status</span>
+                        @if (report.Entries.Count > 0)
+                        {
+                            <span class="text-muted" style="font-size:.8rem;margin-left:8px">
+                                @report.Entries.Count Einträge · @report.Entries.Sum(e => e.Duration).ToString("0.#")h
+                            </span>
+                        }
                     </div>
-                    <div class="report-actions">
+                    <div class="report-actions" @onclick:stopPropagation="true">
                         @if (report.Status == "Offen")
                         {
                             <button class="btn btn-sm btn-primary" @onclick="() => SubmitReport(report.Id)">Einreichen</button>
                         }
-                        <a href="/api/export/weekly/@report.Year/@report.CalendarWeek" target="_blank" class="btn btn-sm btn-outline">PDF Export</a>
+                        <a href="/api/export/weekly/@report.Year/@report.CalendarWeek" target="_blank" class="btn btn-sm btn-outline">PDF</a>
                     </div>
                 </div>
+
+                @if (expandedReportId == report.Id && report.Entries.Count > 0)
+                {
+                    <table class="table mt-3">
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Typ</th>
+                                <th>Tätigkeit</th>
+                                <th>Beschreibung</th>
+                                <th>Std.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var entry in report.Entries.OrderBy(e => e.Date))
+                            {
+                                <tr>
+                                    <td>@entry.Date.ToString("ddd dd.MM.", new System.Globalization.CultureInfo("de-DE"))</td>
+                                    <td><span class="badge badge-@entry.DayType.ToLower()">@entry.DayType</span></td>
+                                    <td>@entry.Title</td>
+                                    <td class="text-muted">@entry.Description</td>
+                                    <td>@entry.Duration.ToString("0.#")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="entry-summary">
+                        Gesamt: <strong>@report.Entries.Sum(e => e.Duration).ToString("0.#") Stunden</strong>
+                    </div>
+                }
+
                 @if (!string.IsNullOrEmpty(report.TrainerComment))
                 {
-                    <div class="trainer-comment">
+                    <div class="trainer-comment mt-2">
                         <small><strong>Ausbilder:</strong> @report.TrainerComment</small>
                     </div>
                 }
                 @if (report.SubmittedAt.HasValue)
                 {
                     <small class="text-muted">Eingereicht: @report.SubmittedAt.Value.ToString("dd.MM.yyyy HH:mm")</small>
+                }
+                @if (report.ReviewedAt.HasValue)
+                {
+                    <small class="text-muted" style="margin-left:12px">Geprüft: @report.ReviewedAt.Value.ToString("dd.MM.yyyy HH:mm")</small>
                 }
             </div>
         }
@@ -68,6 +106,7 @@ else
     private List<WeeklyReport> reports = new();
     private int newYear = DateTime.Today.Year;
     private int newWeek = System.Globalization.ISOWeek.GetWeekOfYear(DateTime.Today);
+    private int? expandedReportId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,5 +128,10 @@ else
     {
         await WeeklyReportService.SubmitReportAsync(id);
         await LoadReports();
+    }
+
+    private void ToggleExpand(int id)
+    {
+        expandedReportId = expandedReportId == id ? null : id;
     }
 }
