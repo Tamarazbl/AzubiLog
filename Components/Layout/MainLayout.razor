@@ -1,0 +1,65 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <AuthorizeView>
+        <Authorized>
+            <nav class="sidebar">
+                <div class="sidebar-brand">
+                    <span class="brand-icon">📋</span>
+                    <span class="brand-text">AzubiLog</span>
+                </div>
+                <ul class="sidebar-nav">
+                    <li><a href="/" class="nav-link"><span class="nav-icon">🏠</span> Dashboard</a></li>
+                    <li><a href="/berichte" class="nav-link"><span class="nav-icon">📝</span> Tagesbericht</a></li>
+                    <li><a href="/wochenberichte" class="nav-link"><span class="nav-icon">📊</span> Wochenberichte</a></li>
+                    <li><a href="/aufgaben" class="nav-link"><span class="nav-icon">✅</span> Aufgaben</a></li>
+                    <li><a href="/stundenplan" class="nav-link"><span class="nav-icon">🕐</span> Stundenplan</a></li>
+                    <AuthorizeView Roles="Klassensprecher">
+                        <Authorized Context="ksAuth">
+                            <li><a href="/admin/stundenplan" class="nav-link"><span class="nav-icon">⚙️</span> Stundenplan verwalten</a></li>
+                        </Authorized>
+                    </AuthorizeView>
+                    <AuthorizeView Roles="Ausbilder">
+                        <Authorized Context="trainerAuth">
+                            <li><a href="/ausbilder" class="nav-link"><span class="nav-icon">👨‍🏫</span> Azubi-Übersicht</a></li>
+                        </Authorized>
+                    </AuthorizeView>
+                </ul>
+            </nav>
+            <div class="main-area">
+                <header class="top-bar">
+                    <div class="top-bar-left">
+                        <h1 class="page-title">AzubiLog</h1>
+                    </div>
+                    <div class="top-bar-right">
+                        <a class="user-avatar" href="/account/profile" title="Mein Konto">@GetInitials(context)</a>
+                        <form method="post" action="/account/logout/submit" class="inline-form">
+                            <button type="submit" class="btn-link">Abmelden</button>
+                        </form>
+                    </div>
+                </header>
+                <main class="page-content">
+                    @Body
+                </main>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <div class="auth-layout">
+                @Body
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
+
+@code {
+    private static string GetInitials(AuthenticationState? auth)
+    {
+        if (auth?.User?.Identity?.IsAuthenticated != true) return "?";
+        var first = auth.User.FindFirst("FirstName")?.Value ?? "";
+        var last = auth.User.FindFirst("LastName")?.Value ?? "";
+        if (!string.IsNullOrEmpty(first) && !string.IsNullOrEmpty(last))
+            return $"{first[0]}{last[0]}".ToUpperInvariant();
+        var email = auth.User.Identity?.Name ?? "?";
+        return email[..1].ToUpperInvariant();
+    }
+}

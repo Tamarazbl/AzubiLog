@@ -1,0 +1,89 @@
+@page "/aufgaben"
+@attribute [Authorize]
+@inject AzubiLog.Services.Todos.ITodoService TodoService
+@rendermode InteractiveServer
+
+<PageTitle>Aufgaben – AzubiLog</PageTitle>
+
+<div class="page-header">
+    <h1>Aufgaben</h1>
+    <p class="subtitle">Verwalte deine To-Do-Liste</p>
+</div>
+
+<div class="card">
+    <div class="todo-input">
+        <input type="text" @bind="newTitle" @onkeydown="OnKeyDown" placeholder="Neue Aufgabe hinzufügen..." />
+        <button class="btn btn-primary btn-sm" @onclick="AddTodo">Hinzufügen</button>
+    </div>
+</div>
+
+<div class="todo-list mt-3">
+    @foreach (var todo in todos)
+    {
+        <div class="todo-item @(todo.IsCompleted ? "completed" : "")">
+            <button class="todo-check" @onclick="() => Toggle(todo.Id)">
+                @(todo.IsCompleted ? "✓" : "○")
+            </button>
+            <div class="todo-content">
+                <span class="todo-title">@todo.Title</span>
+                @if (!string.IsNullOrEmpty(todo.Description))
+                {
+                    <small class="todo-desc">@todo.Description</small>
+                }
+                @if (todo.DueDate.HasValue)
+                {
+                    <small class="todo-due @(todo.DueDate.Value.Date < DateTime.Today && !todo.IsCompleted ? "overdue" : "")">
+                        Fällig: @todo.DueDate.Value.ToString("dd.MM.yyyy")
+                    </small>
+                }
+            </div>
+            <button class="btn btn-sm btn-danger" @onclick="() => Delete(todo.Id)">×</button>
+        </div>
+    }
+    @if (todos.Count == 0)
+    {
+        <div class="card">
+            <p class="text-muted">Keine Aufgaben. Füge oben eine neue hinzu!</p>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TodoItem> todos = new();
+    private string newTitle = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTodos();
+    }
+
+    private async Task LoadTodos()
+    {
+        todos = await TodoService.GetTodosAsync();
+    }
+
+    private async Task AddTodo()
+    {
+        if (string.IsNullOrWhiteSpace(newTitle)) return;
+        await TodoService.CreateTodoAsync(newTitle, null, null);
+        newTitle = string.Empty;
+        await LoadTodos();
+    }
+
+    private async Task Toggle(int id)
+    {
+        await TodoService.ToggleTodoAsync(id);
+        await LoadTodos();
+    }
+
+    private async Task Delete(int id)
+    {
+        await TodoService.DeleteTodoAsync(id);
+        await LoadTodos();
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await AddTodo();
+    }
+}

@@ -1,0 +1,108 @@
+@page "/ausbilder"
+@attribute [Authorize(Roles = "Ausbilder")]
+@inject AzubiLog.Services.Trainer.ITrainerService TrainerService
+@rendermode InteractiveServer
+
+<PageTitle>Azubi-Übersicht – AzubiLog</PageTitle>
+
+<div class="page-header">
+    <h1>Meine Azubis</h1>
+    <p class="subtitle">Übersicht der zugewiesenen Auszubildenden</p>
+</div>
+
+<div class="card">
+    <h3>Azubi zuweisen</h3>
+    <div class="inline-form">
+        <input type="email" @bind="newApprenticeEmail" placeholder="E-Mail des Azubis" />
+        <button class="btn btn-primary btn-sm" @onclick="AssignApprentice">Zuweisen</button>
+    </div>
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-2">@errorMessage</div>
+    }
+</div>
+
+@if (apprentices.Count == 0)
+{
+    <div class="card mt-3">
+        <p class="text-muted">Noch keine Azubis zugewiesen. Füge oben einen Azubi per E-Mail hinzu.</p>
+    </div>
+}
+else
+{
+    <div class="apprentice-grid mt-3">
+        @foreach (var apprentice in apprentices)
+        {
+            <div class="card apprentice-card">
+                <div class="apprentice-header">
+                    <div class="user-avatar-sm">@GetInitials(apprentice.FullName)</div>
+                    <div>
+                        <strong>@apprentice.FullName</strong>
+                        <small class="text-muted">@apprentice.Email</small>
+                    </div>
+                </div>
+                <div class="apprentice-details">
+                    <small>@apprentice.School – @apprentice.ClassName</small>
+                </div>
+                <div class="apprentice-stats">
+                    <span class="stat">
+                        <strong>@apprentice.PendingReports</strong> offene Berichte
+                    </span>
+                    <span class="stat">
+                        <strong>@apprentice.TotalReports</strong> gesamt
+                    </span>
+                </div>
+                <div class="apprentice-actions">
+                    <a href="/ausbilder/berichte/@apprentice.UserId" class="btn btn-sm btn-outline">Berichte ansehen</a>
+                    <button class="btn btn-sm btn-danger" @onclick="() => Unassign(apprentice.UserId)">Entfernen</button>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<AzubiLog.Services.Trainer.ApprenticeOverview> apprentices = new();
+    private string newApprenticeEmail = string.Empty;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadApprentices();
+    }
+
+    private async Task LoadApprentices()
+    {
+        apprentices = await TrainerService.GetAssignedApprenticesAsync();
+    }
+
+    private async Task AssignApprentice()
+    {
+        if (string.IsNullOrWhiteSpace(newApprenticeEmail)) return;
+        errorMessage = null;
+        try
+        {
+            await TrainerService.AssignApprenticeAsync(newApprenticeEmail);
+            newApprenticeEmail = string.Empty;
+            await LoadApprentices();
+        }
+        catch (InvalidOperationException ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task Unassign(string apprenticeId)
+    {
+        await TrainerService.UnassignApprenticeAsync(apprenticeId);
+        await LoadApprentices();
+    }
+
+    private static string GetInitials(string fullName)
+    {
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant()
+            : fullName[..1].ToUpperInvariant();
+    }
+}

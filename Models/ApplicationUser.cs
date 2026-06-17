@@ -1,0 +1,27 @@
+using Microsoft.AspNetCore.Identity;
+
+namespace AzubiLog.Models;
+
+public class ApplicationUser : IdentityUser
+{
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
+    public string School { get; set; } = string.Empty;
+    public string ClassName { get; set; } = string.Empty;
+    public string TrainingOccupation { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+    public double WeeklyTargetHours { get; set; } = 40;
+    public int AnnualVacationDays { get; set; } = 30;
+    public int TrainingYear { get; set; } = 1;
+
+    /// <summary>For Ausbilder: department they belong to.</summary>
+    public string Department { get; set; } = string.Empty;
+
+    public List<WeeklyReport> WeeklyReports { get; set; } = new();
+    public List<ReportEntry> ReportEntries { get; set; } = new();
+    public List<Category> Categories { get; set; } = new();
+    public List<TodoItem> Todos { get; set; } = new();
+
+    /// <summary>Apprentices assigned to this trainer (only when role is Ausbilder).</summary>
+    public List<TrainerAssignment> TrainerAssignments { get; set; } = new();
+}

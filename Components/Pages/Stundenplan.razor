@@ -1,0 +1,81 @@
+@page "/stundenplan"
+@attribute [Authorize]
+@inject AzubiLog.Services.Timetable.ITimetableService TimetableService
+@inject AzubiLog.Services.Identity.ICurrentUserService CurrentUserService
+@rendermode InteractiveServer
+
+<PageTitle>Stundenplan – AzubiLog</PageTitle>
+
+<div class="page-header">
+    <h1>Stundenplan</h1>
+    <p class="subtitle">Dein Berufsschulstundenplan</p>
+</div>
+
+@if (entries.Count == 0)
+{
+    <div class="card">
+        <p class="text-muted">
+            Kein Stundenplan vorhanden für deine Klasse.
+            Der Klassensprecher muss den Stundenplan zuerst eintragen.
+        </p>
+    </div>
+}
+else
+{
+    @foreach (var dayGroup in entries.GroupBy(e => e.DayOfWeek).OrderBy(g => g.Key))
+    {
+        <div class="card mt-3">
+            <h3>@GetDayName(dayGroup.Key)</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Std.</th>
+                        <th>Zeit</th>
+                        <th>Fach</th>
+                        <th>Lehrer</th>
+                        <th>Raum</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in dayGroup.OrderBy(e => e.Period))
+                    {
+                        <tr class="@(entry.IsCancelled ? "cancelled" : "")">
+                            <td>@entry.Period</td>
+                            <td>@entry.StartTime.ToString("HH:mm") – @entry.EndTime.ToString("HH:mm")</td>
+                            <td>@entry.Subject</td>
+                            <td>@entry.Teacher</td>
+                            <td>@entry.Room</td>
+                            <td>
+                                @if (entry.IsCancelled)
+                                {
+                                    <span class="badge badge-cancelled">Entfällt</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private List<TimetableEntry> entries = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await CurrentUserService.GetRequiredUserAsync();
+        entries = await TimetableService.GetTimetableAsync(user.School, user.ClassName);
+    }
+
+    private static string GetDayName(DayOfWeek day) => day switch
+    {
+        DayOfWeek.Monday => "Montag",
+        DayOfWeek.Tuesday => "Dienstag",
+        DayOfWeek.Wednesday => "Mittwoch",
+        DayOfWeek.Thursday => "Donnerstag",
+        DayOfWeek.Friday => "Freitag",
+        _ => day.ToString(),
+    };
+}

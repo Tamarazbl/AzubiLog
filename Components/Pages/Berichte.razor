@@ -1,0 +1,137 @@
+@page "/berichte"
+@attribute [Authorize]
+@inject AzubiLog.Services.ReportEntries.IReportEntryService ReportEntryService
+@rendermode InteractiveServer
+
+<PageTitle>Tagesbericht – AzubiLog</PageTitle>
+
+<div class="page-header">
+    <h1>Tagesbericht</h1>
+    <p class="subtitle">@selectedDate.ToString("dddd, dd. MMMM yyyy", new System.Globalization.CultureInfo("de-DE"))</p>
+</div>
+
+<div class="date-nav">
+    <button class="btn btn-sm" @onclick="PreviousDay">← Vortag</button>
+    <input type="date" value="@selectedDate.ToString("yyyy-MM-dd")" @onchange="OnDateChanged" />
+    <button class="btn btn-sm" @onclick="NextDay">Nächster Tag →</button>
+    <button class="btn btn-sm" @onclick="GoToToday">Heute</button>
+</div>
+
+<div class="card mt-3">
+    <h3>Neuer Eintrag</h3>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Typ</label>
+            <select @bind="newEntry.DayType">
+                <option value="Betrieb">Betrieb</option>
+                <option value="Berufsschule">Berufsschule</option>
+                <option value="Feiertag">Feiertag</option>
+                <option value="Urlaub">Urlaub</option>
+                <option value="Krank">Krank</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Stunden</label>
+            <input type="number" @bind="newEntry.Duration" step="0.5" min="0" max="24" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Titel</label>
+        <input type="text" @bind="newEntry.Title" placeholder="Was hast du gemacht?" />
+    </div>
+    @if (newEntry.DayType == "Berufsschule")
+    {
+        <div class="form-group">
+            <label>Unterrichtsfach</label>
+            <input type="text" @bind="newEntry.Subject" placeholder="z.B. Anwendungsentwicklung" />
+        </div>
+    }
+    <div class="form-group">
+        <label>Beschreibung</label>
+        <textarea @bind="newEntry.Description" rows="3" placeholder="Beschreibe deine Tätigkeiten..."></textarea>
+    </div>
+    <div class="form-group">
+        <label>Notiz (optional)</label>
+        <input type="text" @bind="newEntry.Note" placeholder="Zusätzliche Anmerkungen" />
+    </div>
+    <button class="btn btn-primary" @onclick="SaveEntry" disabled="@saving">
+        @(saving ? "Speichert..." : "Eintrag speichern")
+    </button>
+</div>
+
+@if (entries.Count > 0)
+{
+    <div class="card mt-3">
+        <h3>Einträge am @selectedDate.ToString("dd.MM.")</h3>
+        @foreach (var entry in entries)
+        {
+            <div class="entry-item">
+                <div class="entry-header">
+                    <span class="badge badge-@entry.DayType.ToLower()">@entry.DayType</span>
+                    <strong>@entry.Title</strong>
+                    <span class="entry-hours">@entry.Duration.ToString("0.#")h</span>
+                </div>
+                <p class="entry-description">@entry.Description</p>
+                @if (!string.IsNullOrEmpty(entry.Subject))
+                {
+                    <small class="text-muted">Fach: @entry.Subject</small>
+                }
+                <div class="entry-actions">
+                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteEntry(entry.Id)">Löschen</button>
+                </div>
+            </div>
+        }
+        <div class="entry-summary">
+            Gesamt: <strong>@entries.Sum(e => e.Duration).ToString("0.#") Stunden</strong>
+        </div>
+    </div>
+}
+
+@code {
+    private DateTime selectedDate = DateTime.Today;
+    private List<ReportEntry> entries = new();
+    private ReportEntry newEntry = new() { DayType = "Betrieb", Duration = 8 };
+    private bool saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEntries();
+    }
+
+    private async Task LoadEntries()
+    {
+        entries = await ReportEntryService.GetEntriesForDateAsync(selectedDate);
+    }
+
+    private async Task SaveEntry()
+    {
+        if (string.IsNullOrWhiteSpace(newEntry.Title) || string.IsNullOrWhiteSpace(newEntry.Description))
+            return;
+
+        saving = true;
+        newEntry.Date = selectedDate;
+        await ReportEntryService.CreateEntryAsync(newEntry);
+        newEntry = new ReportEntry { DayType = "Betrieb", Duration = 8 };
+        await LoadEntries();
+        saving = false;
+    }
+
+    private async Task DeleteEntry(int id)
+    {
+        await ReportEntryService.DeleteEntryAsync(id);
+        await LoadEntries();
+    }
+
+    private async Task PreviousDay() { selectedDate = selectedDate.AddDays(-1); await LoadEntries(); }
+    private async Task NextDay() { selectedDate = selectedDate.AddDays(1); await LoadEntries(); }
+    private async Task GoToToday() { selectedDate = DateTime.Today; await LoadEntries(); }
+
+    private async Task OnDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var date))
+        {
+            selectedDate = date;
+            await LoadEntries();
+        }
+    }
+}

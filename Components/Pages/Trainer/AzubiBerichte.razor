@@ -1,0 +1,119 @@
+@page "/ausbilder/berichte/{ApprenticeId}"
+@attribute [Authorize(Roles = "Ausbilder")]
+@inject AzubiLog.Services.Trainer.ITrainerService TrainerService
+@rendermode InteractiveServer
+
+<PageTitle>Azubi-Berichte – AzubiLog</PageTitle>
+
+<div class="page-header">
+    <h1>Berichte</h1>
+    <p class="subtitle"><a href="/ausbilder">← Zurück zur Übersicht</a></p>
+</div>
+
+@if (reports.Count == 0)
+{
+    <div class="card">
+        <p class="text-muted">Dieser Azubi hat noch keine Wochenberichte.</p>
+    </div>
+}
+else
+{
+    @foreach (var report in reports)
+    {
+        <div class="card mt-3 report-card">
+            <div class="report-header">
+                <div>
+                    <strong>KW @report.CalendarWeek / @report.Year</strong>
+                    <span class="badge badge-@report.Status.ToLower()">@report.Status</span>
+                </div>
+            </div>
+
+            @if (report.Entries.Count > 0)
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Datum</th>
+                            <th>Typ</th>
+                            <th>Titel</th>
+                            <th>Stunden</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in report.Entries.OrderBy(e => e.Date))
+                        {
+                            <tr>
+                                <td>@entry.Date.ToString("dd.MM.")</td>
+                                <td><span class="badge badge-@entry.DayType.ToLower()">@entry.DayType</span></td>
+                                <td>@entry.Title</td>
+                                <td>@entry.Duration.ToString("0.#")h</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <div class="entry-summary">
+                    Gesamt: <strong>@report.Entries.Sum(e => e.Duration).ToString("0.#") Stunden</strong>
+                </div>
+            }
+
+            @if (report.Status == "Eingereicht")
+            {
+                <div class="review-section mt-3">
+                    <div class="form-group">
+                        <label>Kommentar (optional)</label>
+                        <textarea @bind="reviewComment" rows="2" placeholder="Feedback für den Azubi..."></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-sm" @onclick="() => Approve(report.Id)">Genehmigen</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => Reject(report.Id)">Ablehnen</button>
+                    </div>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(report.TrainerComment))
+            {
+                <div class="trainer-comment mt-2">
+                    <small><strong>Ihr Kommentar:</strong> @report.TrainerComment</small>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public string ApprenticeId { get; set; } = string.Empty;
+
+    private List<WeeklyReport> reports = new();
+    private string? reviewComment;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReports();
+    }
+
+    private async Task LoadReports()
+    {
+        try
+        {
+            reports = await TrainerService.GetApprenticeReportsAsync(ApprenticeId);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            reports = new();
+        }
+    }
+
+    private async Task Approve(int reportId)
+    {
+        await TrainerService.ReviewReportAsync(reportId, "Genehmigt", reviewComment);
+        reviewComment = null;
+        await LoadReports();
+    }
+
+    private async Task Reject(int reportId)
+    {
+        await TrainerService.ReviewReportAsync(reportId, "Abgelehnt", reviewComment);
+        reviewComment = null;
+        await LoadReports();
+    }
+}

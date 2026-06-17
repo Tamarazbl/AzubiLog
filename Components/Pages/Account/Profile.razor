@@ -1,0 +1,104 @@
+@page "/account/profile"
+@attribute [Authorize]
+@inject AzubiLog.Services.Identity.ICurrentUserService CurrentUserService
+
+<PageTitle>Mein Konto – AzubiLog</PageTitle>
+
+<div class="page-header">
+    <h1>Mein Konto</h1>
+    <p class="subtitle">Verwalte deine persönlichen Daten und Ausbildungseinstellungen.</p>
+</div>
+
+@if (QuerySaved == "true")
+{
+    <div class="alert alert-success">Änderungen gespeichert.</div>
+}
+@if (QueryError == "failed")
+{
+    <div class="alert alert-danger">Speichern fehlgeschlagen.</div>
+}
+
+@if (user is not null)
+{
+    <form method="post" action="/account/profile/submit" class="profile-form">
+        <div class="card">
+            <h3>Persönliche Daten</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">Vorname</label>
+                    <input type="text" id="firstName" name="firstName" value="@user.FirstName" required />
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Nachname</label>
+                    <input type="text" id="lastName" name="lastName" value="@user.LastName" required />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="email">E-Mail</label>
+                <input type="email" id="email" value="@user.Email" disabled />
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Ausbildung</h3>
+            <div class="form-group">
+                <label for="trainingOccupation">Ausbildungsberuf</label>
+                <input type="text" id="trainingOccupation" name="trainingOccupation" value="@user.TrainingOccupation" placeholder="z.B. Fachinformatiker" />
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="school">Berufsschule</label>
+                    <input type="text" id="school" name="school" value="@user.School" />
+                </div>
+                <div class="form-group">
+                    <label for="className">Klasse</label>
+                    <input type="text" id="className" name="className" value="@user.ClassName" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="trainingYear">Ausbildungsjahr</label>
+                <select id="trainingYear" name="trainingYear">
+                    @for (int y = 1; y <= 4; y++)
+                    {
+                        <option value="@y" selected="@(user.TrainingYear == y)">@y. Jahr</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Arbeitszeiten & Urlaub</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="weeklyTargetHours">Wochenstunden (Soll)</label>
+                    <input type="number" id="weeklyTargetHours" name="weeklyTargetHours" value="@user.WeeklyTargetHours" step="0.5" min="0" max="60" />
+                </div>
+                <div class="form-group">
+                    <label for="annualVacationDays">Jahresurlaub (Tage)</label>
+                    <input type="number" id="annualVacationDays" name="annualVacationDays" value="@user.AnnualVacationDays" min="0" max="60" />
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Änderungen speichern</button>
+    </form>
+}
+else
+{
+    <p>Lade Profil...</p>
+}
+
+@code {
+    private ApplicationUser? user;
+
+    [SupplyParameterFromQuery(Name = "saved")]
+    public string? QuerySaved { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? QueryError { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await CurrentUserService.GetRequiredUserAsync();
+    }
+}

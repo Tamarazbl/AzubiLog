@@ -1,0 +1,75 @@
+@page "/account/register"
+@layout AzubiLog.Components.Layout.MainLayout
+
+<PageTitle>Registrieren – AzubiLog</PageTitle>
+
+<div class="auth-card auth-card-wide">
+    <div class="auth-header">
+        <h2>Konto erstellen</h2>
+        <p>Registriere dich um dein Berichtsheft digital zu führen.</p>
+    </div>
+
+    @if (QueryError == "invalid")
+    {
+        <div class="alert alert-danger">Bitte fülle alle Pflichtfelder korrekt aus.</div>
+    }
+    @if (QueryError == "failed")
+    {
+        <div class="alert alert-danger">Registrierung fehlgeschlagen. Passwort muss min. 8 Zeichen, Groß-/Kleinbuchstaben und eine Zahl enthalten.</div>
+    }
+
+    <form method="post" action="/account/register/submit" class="auth-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="firstName">Vorname *</label>
+                <input type="text" id="firstName" name="firstName" required placeholder="Max" />
+            </div>
+            <div class="form-group">
+                <label for="lastName">Nachname *</label>
+                <input type="text" id="lastName" name="lastName" required placeholder="Mustermann" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="email">E-Mail *</label>
+            <input type="email" id="email" name="email" required placeholder="name@beispiel.de" />
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="school">Berufsschule *</label>
+                <input type="text" id="school" name="school" required placeholder="OSZ IMT Berlin" />
+            </div>
+            <div class="form-group">
+                <label for="className">Klasse *</label>
+                <input type="text" id="className" name="className" required placeholder="FI-24a" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="role">Rolle</label>
+            <select id="role" name="role">
+                <option value="Azubi">Azubi</option>
+                <option value="Klassensprecher">Klassensprecher (Admin)</option>
+                <option value="Ausbilder">Ausbilder</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="password">Passwort *</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••" />
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Passwort bestätigen *</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required placeholder="••••••••" />
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Registrieren</button>
+    </form>
+
+    <div class="auth-footer">
+        <p>Bereits ein Konto? <a href="/account/login">Anmelden</a></p>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? QueryError { get; set; }
+}

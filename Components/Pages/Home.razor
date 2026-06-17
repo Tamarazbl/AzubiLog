@@ -1,0 +1,86 @@
+@page "/"
+@attribute [Authorize]
+@inject AzubiLog.Services.Dashboard.IDashboardService DashboardService
+@rendermode InteractiveServer
+
+<PageTitle>Dashboard – AzubiLog</PageTitle>
+
+<div class="page-header">
+    <h1>Hallo, @dashboard?.UserFirstName 👋</h1>
+    <p class="subtitle">Kalenderwoche @dashboard?.CalendarWeek</p>
+</div>
+
+@if (dashboard is not null)
+{
+    <div class="dashboard-grid">
+        <div class="stat-card">
+            <div class="stat-value">@dashboard.RecordedHours.ToString("0.#") / @dashboard.WeeklyTargetHours.ToString("0.#")</div>
+            <div class="stat-label">Stunden diese Woche</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: @(Math.Min(100, dashboard.RecordedHours / dashboard.WeeklyTargetHours * 100).ToString("0"))%"></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">@dashboard.RemainingHours.ToString("0.#")</div>
+            <div class="stat-label">Reststunden</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">@dashboard.OpenTodos</div>
+            <div class="stat-label">Offene Aufgaben</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">@dashboard.PendingReports</div>
+            <div class="stat-label">Offene Wochenberichte</div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <h3>Letzte Einträge</h3>
+        @if (dashboard.RecentEntries.Count == 0)
+        {
+            <p class="text-muted">Noch keine Einträge. <a href="/berichte">Erstelle deinen ersten Tagesbericht!</a></p>
+        }
+        else
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Titel</th>
+                        <th>Typ</th>
+                        <th>Stunden</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in dashboard.RecentEntries)
+                    {
+                        <tr>
+                            <td>@entry.Date.ToString("dd.MM.yyyy")</td>
+                            <td>@entry.Title</td>
+                            <td><span class="badge badge-@entry.DayType.ToLower()">@entry.DayType</span></td>
+                            <td>@entry.Duration.ToString("0.#")h</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+
+    <div class="action-buttons mt-4">
+        <a href="/berichte" class="btn btn-primary">Neuer Tagesbericht</a>
+        <a href="/wochenberichte" class="btn btn-outline">Wochenberichte</a>
+    </div>
+}
+else
+{
+    <p>Lade Dashboard...</p>
+}
+
+@code {
+    private AzubiLog.Services.Dashboard.DashboardViewModel? dashboard;
+
+    protected override async Task OnInitializedAsync()
+    {
+        dashboard = await DashboardService.GetDashboardAsync();
+    }
+}

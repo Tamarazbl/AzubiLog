@@ -1,0 +1,48 @@
+@page "/account/login"
+@layout AzubiLog.Components.Layout.MainLayout
+
+<PageTitle>Anmelden – AzubiLog</PageTitle>
+
+<div class="auth-card">
+    <div class="auth-header">
+        <h2>Anmelden</h2>
+        <p>Melde dich mit deinem Konto an.</p>
+    </div>
+
+    @if (QueryError == "invalid")
+    {
+        <div class="alert alert-danger">Ungültige E-Mail oder Passwort.</div>
+    }
+    @if (QueryRegistered == "true")
+    {
+        <div class="alert alert-success">Registrierung erfolgreich! Du kannst dich jetzt anmelden.</div>
+    }
+
+    <form method="post" action="/account/login/submit" class="auth-form">
+        <div class="form-group">
+            <label for="email">E-Mail</label>
+            <input type="email" id="email" name="email" required autofocus placeholder="name@beispiel.de" />
+        </div>
+        <div class="form-group">
+            <label for="password">Passwort</label>
+            <input type="password" id="password" name="password" required placeholder="••••••••" />
+        </div>
+        <div class="form-check">
+            <input type="checkbox" id="rememberMe" name="rememberMe" value="true" />
+            <label for="rememberMe">Angemeldet bleiben</label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+    </form>
+
+    <div class="auth-footer">
+        <p>Noch kein Konto? <a href="/account/register">Jetzt registrieren</a></p>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? QueryError { get; set; }
+
+    [SupplyParameterFromQuery(Name = "registered")]
+    public string? QueryRegistered { get; set; }
+}

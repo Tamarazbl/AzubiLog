@@ -1,0 +1,165 @@
+@page "/admin/stundenplan"
+@attribute [Authorize(Roles = "Klassensprecher")]
+@inject AzubiLog.Services.Timetable.ITimetableService TimetableService
+@inject AzubiLog.Services.Identity.ICurrentUserService CurrentUserService
+@rendermode InteractiveServer
+
+<PageTitle>Stundenplan verwalten – AzubiLog</PageTitle>
+
+<div class="page-header">
+    <h1>Stundenplan verwalten</h1>
+    <p class="subtitle">Trage den Stundenplan für deine Klasse ein – er wird automatisch für alle Mitschüler übernommen.</p>
+</div>
+
+@if (school is not null)
+{
+    <div class="card info-card">
+        <strong>@school</strong> – Klasse <strong>@className</strong>
+    </div>
+}
+
+<div class="card mt-3">
+    <h3>Neuen Eintrag hinzufügen</h3>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Wochentag</label>
+            <select @bind="newEntry.DayOfWeek">
+                <option value="@DayOfWeek.Monday">Montag</option>
+                <option value="@DayOfWeek.Tuesday">Dienstag</option>
+                <option value="@DayOfWeek.Wednesday">Mittwoch</option>
+                <option value="@DayOfWeek.Thursday">Donnerstag</option>
+                <option value="@DayOfWeek.Friday">Freitag</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Stunde Nr.</label>
+            <input type="number" @bind="newEntry.Period" min="1" max="12" />
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Von (HH:mm)</label>
+            <input type="text" @bind="startTimeString" placeholder="08:00" />
+        </div>
+        <div class="form-group">
+            <label>Bis (HH:mm)</label>
+            <input type="text" @bind="endTimeString" placeholder="09:30" />
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group">
+            <label>Fach</label>
+            <input type="text" @bind="newEntry.Subject" placeholder="z.B. Anwendungsentwicklung" />
+        </div>
+        <div class="form-group">
+            <label>Lehrer (optional)</label>
+            <input type="text" @bind="newEntry.Teacher" placeholder="Herr/Frau ..." />
+        </div>
+        <div class="form-group">
+            <label>Raum (optional)</label>
+            <input type="text" @bind="newEntry.Room" placeholder="z.B. A203" />
+        </div>
+    </div>
+    <button class="btn btn-primary" @onclick="SaveEntry">Eintrag speichern</button>
+</div>
+
+@if (entries.Count > 0)
+{
+    @foreach (var dayGroup in entries.GroupBy(e => e.DayOfWeek).OrderBy(g => g.Key))
+    {
+        <div class="card mt-3">
+            <h3>@GetDayName(dayGroup.Key)</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Std.</th>
+                        <th>Zeit</th>
+                        <th>Fach</th>
+                        <th>Lehrer</th>
+                        <th>Raum</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in dayGroup.OrderBy(e => e.Period))
+                    {
+                        <tr class="@(entry.IsCancelled ? "cancelled" : "")">
+                            <td>@entry.Period</td>
+                            <td>@entry.StartTime.ToString("HH:mm") – @entry.EndTime.ToString("HH:mm")</td>
+                            <td>@entry.Subject</td>
+                            <td>@entry.Teacher</td>
+                            <td>@entry.Room</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline" @onclick="() => ToggleCancelled(entry.Id)">
+                                    @(entry.IsCancelled ? "Aktivieren" : "Entfällt")
+                                </button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteEntry(entry.Id)">×</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+@code {
+    private List<TimetableEntry> entries = new();
+    private TimetableEntry newEntry = new() { DayOfWeek = DayOfWeek.Monday, Period = 1 };
+    private string? school;
+    private string? className;
+    private string startTimeString = "08:00";
+    private string endTimeString = "09:30";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var user = await CurrentUserService.GetRequiredUserAsync();
+        school = user.School;
+        className = user.ClassName;
+        await LoadEntries();
+    }
+
+    private async Task LoadEntries()
+    {
+        if (school is not null && className is not null)
+            entries = await TimetableService.GetTimetableAsync(school, className);
+    }
+
+    private async Task SaveEntry()
+    {
+        if (string.IsNullOrWhiteSpace(newEntry.Subject) || school is null || className is null) return;
+
+        newEntry.School = school;
+        newEntry.ClassName = className;
+        newEntry.StartTime = TimeOnly.Parse(startTimeString);
+        newEntry.EndTime = TimeOnly.Parse(endTimeString);
+
+        await TimetableService.UpsertEntryAsync(newEntry);
+        newEntry = new TimetableEntry { DayOfWeek = DayOfWeek.Monday, Period = 1 };
+        startTimeString = "08:00";
+        endTimeString = "09:30";
+        await LoadEntries();
+    }
+
+    private async Task ToggleCancelled(int id)
+    {
+        await TimetableService.ToggleCancelledAsync(id);
+        await LoadEntries();
+    }
+
+    private async Task DeleteEntry(int id)
+    {
+        await TimetableService.DeleteEntryAsync(id);
+        await LoadEntries();
+    }
+
+    private static string GetDayName(DayOfWeek day) => day switch
+    {
+        DayOfWeek.Monday => "Montag",
+        DayOfWeek.Tuesday => "Dienstag",
+        DayOfWeek.Wednesday => "Mittwoch",
+        DayOfWeek.Thursday => "Donnerstag",
+        DayOfWeek.Friday => "Freitag",
+        _ => day.ToString(),
+    };
+}
