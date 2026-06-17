@@ -86,7 +86,41 @@ a { color: var(--accent); text-decoration: none; transition: color .15s; }
 a:hover { color: var(--accent-hover); }
 
 /* === App Shell === */
-.app-shell { display: flex; min-height: 100vh; background: var(--bg-secondary); }
+.app-shell { display: flex; min-height: 100vh; background: var(--bg-secondary); transition: background .3s, color .3s; }
+
+/* Default to light if no theme class applied */
+.app-shell:not(.theme-dark):not(.theme-light) {
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F8FAFC;
+    --bg-tertiary: #F1F5F9;
+    --bg-hover: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --border: #E2E8F0;
+    --border-light: #F1F5F9;
+    --accent: #6366F1;
+    --accent-hover: #4F46E5;
+    --accent-light: #EEF2FF;
+    --accent-text: #FFFFFF;
+    --sidebar-bg: #0F172A;
+    --sidebar-text: #CBD5E1;
+    --sidebar-text-active: #FFFFFF;
+    --sidebar-hover: rgba(255,255,255,.08);
+    --sidebar-active: rgba(99,102,241,.3);
+    --success: #10B981;
+    --success-bg: #ECFDF5;
+    --danger: #EF4444;
+    --danger-bg: #FEF2F2;
+    --warning: #F59E0B;
+    --warning-bg: #FFFBEB;
+    --info: #3B82F6;
+    --info-bg: #EFF6FF;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+}
 
 /* === Sidebar === */
 .sidebar {
@@ -213,6 +247,15 @@ a:hover { color: var(--accent-hover); }
 
 .theme-toggle:hover { background: var(--bg-hover); color: var(--accent); border-color: var(--accent); }
 
+/* Show correct icon based on theme */
+.theme-light .icon-sun { display: none; }
+.theme-light .icon-moon { display: block; }
+.theme-dark .icon-sun { display: block; }
+.theme-dark .icon-moon { display: none; }
+/* Default when no theme class yet */
+.icon-sun { display: none; }
+.icon-moon { display: block; }
+
 .user-avatar {
     display: flex;
     align-items: center;
@@ -261,6 +304,7 @@ a:hover { color: var(--accent-hover); }
     width: 100%;
     background: var(--bg-secondary);
     padding: 24px;
+    flex: 1;
 }
 
 .auth-card {
