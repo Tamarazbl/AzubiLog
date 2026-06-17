@@ -78,8 +78,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.ToTable("Todos");
             entity.Property(t => t.Title).HasMaxLength(200).IsRequired();
             entity.Property(t => t.Description).HasMaxLength(2000);
+            entity.Property(t => t.ReviewStatus).HasMaxLength(40).HasDefaultValue("Offen");
+            entity.Property(t => t.ReviewComment).HasMaxLength(2000);
             entity.HasOne(t => t.User).WithMany(u => u.Todos)
                 .HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(t => t.ReviewedBy).WithMany()
+                .HasForeignKey(t => t.ReviewedByUserId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<TimetableEntry>(entity =>

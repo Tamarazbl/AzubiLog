@@ -105,4 +105,51 @@ public sealed class TrainerService(
             await dbContext.SaveChangesAsync(ct);
         }
     }
+
+    public async Task<List<TodoItem>> GetApprenticeTodosAsync(string apprenticeId, CancellationToken ct = default)
+    {
+        var trainer = await currentUserService.GetRequiredUserAsync(ct);
+        var assigned = await dbContext.TrainerAssignments
+            .AnyAsync(a => a.TrainerId == trainer.Id && a.ApprenticeId == apprenticeId, ct);
+        if (!assigned) throw new UnauthorizedAccessException("Kein Zugriff auf diesen Azubi.");
+
+        return await dbContext.Todos
+            .Where(t => t.UserId == apprenticeId && t.IsCompleted)
+            .Include(t => t.User)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<TodoItem>> GetAllApprenticeTodosAsync(CancellationToken ct = default)
+    {
+        var trainer = await currentUserService.GetRequiredUserAsync(ct);
+        var apprenticeIds = await dbContext.TrainerAssignments
+            .Where(a => a.TrainerId == trainer.Id)
+            .Select(a => a.ApprenticeId)
+            .ToListAsync(ct);
+
+        return await dbContext.Todos
+            .Where(t => apprenticeIds.Contains(t.UserId) && t.IsCompleted)
+            .Include(t => t.User)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync(ct);
+    }
+
+    public async Task ReviewTodoAsync(int todoId, string status, string? comment, CancellationToken ct = default)
+    {
+        var trainer = await currentUserService.GetRequiredUserAsync(ct);
+        var todo = await dbContext.Todos
+            .FirstOrDefaultAsync(t => t.Id == todoId, ct)
+            ?? throw new InvalidOperationException("Aufgabe nicht gefunden.");
+
+        var assigned = await dbContext.TrainerAssignments
+            .AnyAsync(a => a.TrainerId == trainer.Id && a.ApprenticeId == todo.UserId, ct);
+        if (!assigned) throw new UnauthorizedAccessException("Kein Zugriff.");
+
+        todo.ReviewStatus = status;
+        todo.ReviewComment = comment;
+        todo.ReviewedAt = DateTime.UtcNow;
+        todo.ReviewedByUserId = trainer.Id;
+        await dbContext.SaveChangesAsync(ct);
+    }
 }

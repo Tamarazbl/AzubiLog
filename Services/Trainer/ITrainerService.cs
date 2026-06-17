@@ -9,6 +9,9 @@ public interface ITrainerService
     Task ReviewReportAsync(int weeklyReportId, string status, string? comment, CancellationToken ct = default);
     Task AssignApprenticeAsync(string apprenticeEmail, CancellationToken ct = default);
     Task UnassignApprenticeAsync(string apprenticeId, CancellationToken ct = default);
+    Task<List<TodoItem>> GetApprenticeTodosAsync(string apprenticeId, CancellationToken ct = default);
+    Task<List<TodoItem>> GetAllApprenticeTodosAsync(CancellationToken ct = default);
+    Task ReviewTodoAsync(int todoId, string status, string? comment, CancellationToken ct = default);
 }
 
 public sealed class ApprenticeOverview

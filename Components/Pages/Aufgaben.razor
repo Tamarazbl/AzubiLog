@@ -36,6 +36,20 @@
                         Fällig: @todo.DueDate.Value.ToString("dd.MM.yyyy")
                     </small>
                 }
+                @if (todo.IsCompleted && todo.ReviewStatus != "Offen")
+                {
+                    <span class="badge badge-@todo.ReviewStatus.ToLower()" style="margin-top:4px">
+                        Ausbilder: @todo.ReviewStatus
+                    </span>
+                    @if (!string.IsNullOrEmpty(todo.ReviewComment))
+                    {
+                        <small class="todo-desc" style="color:var(--danger)">@todo.ReviewComment</small>
+                    }
+                }
+                @if (todo.IsCompleted && todo.ReviewStatus == "Offen")
+                {
+                    <small class="todo-desc">Wartet auf Prüfung durch Ausbilder</small>
+                }
             </div>
             <button class="btn btn-sm btn-danger" @onclick="() => Delete(todo.Id)">×</button>
         </div>
