@@ -11,105 +11,135 @@
     <p class="subtitle">Trage den Stundenplan für deine Klasse ein – er wird automatisch für alle Mitschüler übernommen.</p>
 </div>
 
-@if (school is not null)
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success">@successMessage</div>
+}
+
+@if (string.IsNullOrEmpty(school) || string.IsNullOrEmpty(className))
+{
+    <div class="alert alert-warning">
+        Bitte trage zuerst deine Schule und Klasse in deinem <a href="/account/profile">Profil</a> ein, bevor du den Stundenplan bearbeiten kannst.
+    </div>
+}
+else
 {
     <div class="card info-card">
         <strong>@school</strong> – Klasse <strong>@className</strong>
     </div>
-}
 
-<div class="card mt-3">
-    <h3>Neuen Eintrag hinzufügen</h3>
-    <div class="form-row">
-        <div class="form-group">
-            <label>Wochentag</label>
-            <select @bind="newEntry.DayOfWeek">
-                <option value="@DayOfWeek.Monday">Montag</option>
-                <option value="@DayOfWeek.Tuesday">Dienstag</option>
-                <option value="@DayOfWeek.Wednesday">Mittwoch</option>
-                <option value="@DayOfWeek.Thursday">Donnerstag</option>
-                <option value="@DayOfWeek.Friday">Freitag</option>
-            </select>
+    <div class="card mt-3">
+        <h3>Neuen Eintrag hinzufügen</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Wochentag</label>
+                <select @bind="selectedDay">
+                    <option value="Monday">Montag</option>
+                    <option value="Tuesday">Dienstag</option>
+                    <option value="Wednesday">Mittwoch</option>
+                    <option value="Thursday">Donnerstag</option>
+                    <option value="Friday">Freitag</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Stunde Nr.</label>
+                <input type="number" @bind="period" min="1" max="12" />
+            </div>
         </div>
-        <div class="form-group">
-            <label>Stunde Nr.</label>
-            <input type="number" @bind="newEntry.Period" min="1" max="12" />
+        <div class="form-row">
+            <div class="form-group">
+                <label>Von (HH:mm)</label>
+                <input type="text" @bind="startTimeString" placeholder="08:00" />
+            </div>
+            <div class="form-group">
+                <label>Bis (HH:mm)</label>
+                <input type="text" @bind="endTimeString" placeholder="09:30" />
+            </div>
         </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Fach</label>
+                <input type="text" @bind="subject" placeholder="z.B. Anwendungsentwicklung" />
+            </div>
+            <div class="form-group">
+                <label>Lehrer (optional)</label>
+                <input type="text" @bind="teacher" placeholder="Herr/Frau ..." />
+            </div>
+            <div class="form-group">
+                <label>Raum (optional)</label>
+                <input type="text" @bind="room" placeholder="z.B. A203" />
+            </div>
+        </div>
+        <button class="btn btn-primary" @onclick="SaveEntry" disabled="@saving">
+            @(saving ? "Speichert..." : "Eintrag speichern")
+        </button>
     </div>
-    <div class="form-row">
-        <div class="form-group">
-            <label>Von (HH:mm)</label>
-            <input type="text" @bind="startTimeString" placeholder="08:00" />
-        </div>
-        <div class="form-group">
-            <label>Bis (HH:mm)</label>
-            <input type="text" @bind="endTimeString" placeholder="09:30" />
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group">
-            <label>Fach</label>
-            <input type="text" @bind="newEntry.Subject" placeholder="z.B. Anwendungsentwicklung" />
-        </div>
-        <div class="form-group">
-            <label>Lehrer (optional)</label>
-            <input type="text" @bind="newEntry.Teacher" placeholder="Herr/Frau ..." />
-        </div>
-        <div class="form-group">
-            <label>Raum (optional)</label>
-            <input type="text" @bind="newEntry.Room" placeholder="z.B. A203" />
-        </div>
-    </div>
-    <button class="btn btn-primary" @onclick="SaveEntry">Eintrag speichern</button>
-</div>
 
-@if (entries.Count > 0)
-{
-    @foreach (var dayGroup in entries.GroupBy(e => e.DayOfWeek).OrderBy(g => g.Key))
+    @if (entries.Count > 0)
+    {
+        @foreach (var dayGroup in entries.GroupBy(e => e.DayOfWeek).OrderBy(g => g.Key))
+        {
+            <div class="card mt-3">
+                <h3>@GetDayName(dayGroup.Key)</h3>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Std.</th>
+                            <th>Zeit</th>
+                            <th>Fach</th>
+                            <th>Lehrer</th>
+                            <th>Raum</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in dayGroup.OrderBy(e => e.Period))
+                        {
+                            <tr class="@(entry.IsCancelled ? "cancelled" : "")">
+                                <td>@entry.Period</td>
+                                <td>@entry.StartTime.ToString("HH:mm") – @entry.EndTime.ToString("HH:mm")</td>
+                                <td>@entry.Subject</td>
+                                <td>@entry.Teacher</td>
+                                <td>@entry.Room</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline" @onclick="() => ToggleCancelled(entry.Id)">
+                                        @(entry.IsCancelled ? "Aktivieren" : "Entfällt")
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteEntry(entry.Id)">×</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+    else
     {
         <div class="card mt-3">
-            <h3>@GetDayName(dayGroup.Key)</h3>
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Std.</th>
-                        <th>Zeit</th>
-                        <th>Fach</th>
-                        <th>Lehrer</th>
-                        <th>Raum</th>
-                        <th>Aktionen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var entry in dayGroup.OrderBy(e => e.Period))
-                    {
-                        <tr class="@(entry.IsCancelled ? "cancelled" : "")">
-                            <td>@entry.Period</td>
-                            <td>@entry.StartTime.ToString("HH:mm") – @entry.EndTime.ToString("HH:mm")</td>
-                            <td>@entry.Subject</td>
-                            <td>@entry.Teacher</td>
-                            <td>@entry.Room</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline" @onclick="() => ToggleCancelled(entry.Id)">
-                                    @(entry.IsCancelled ? "Aktivieren" : "Entfällt")
-                                </button>
-                                <button class="btn btn-sm btn-danger" @onclick="() => DeleteEntry(entry.Id)">×</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            <p class="text-muted">Noch keine Einträge vorhanden. Füge oben deinen ersten Stundenplaneintrag hinzu!</p>
         </div>
     }
 }
 
 @code {
     private List<TimetableEntry> entries = new();
-    private TimetableEntry newEntry = new() { DayOfWeek = DayOfWeek.Monday, Period = 1 };
     private string? school;
     private string? className;
+    private string selectedDay = "Monday";
+    private int period = 1;
     private string startTimeString = "08:00";
     private string endTimeString = "09:30";
+    private string subject = "";
+    private string teacher = "";
+    private string room = "";
+    private string? errorMessage;
+    private string? successMessage;
+    private bool saving;
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,24 +151,81 @@
 
     private async Task LoadEntries()
     {
-        if (school is not null && className is not null)
+        if (!string.IsNullOrEmpty(school) && !string.IsNullOrEmpty(className))
             entries = await TimetableService.GetTimetableAsync(school, className);
     }
 
     private async Task SaveEntry()
     {
-        if (string.IsNullOrWhiteSpace(newEntry.Subject) || school is null || className is null) return;
+        errorMessage = null;
+        successMessage = null;
 
-        newEntry.School = school;
-        newEntry.ClassName = className;
-        newEntry.StartTime = TimeOnly.Parse(startTimeString);
-        newEntry.EndTime = TimeOnly.Parse(endTimeString);
+        if (string.IsNullOrWhiteSpace(subject))
+        {
+            errorMessage = "Bitte gib ein Fach ein.";
+            return;
+        }
 
-        await TimetableService.UpsertEntryAsync(newEntry);
-        newEntry = new TimetableEntry { DayOfWeek = DayOfWeek.Monday, Period = 1 };
-        startTimeString = "08:00";
-        endTimeString = "09:30";
-        await LoadEntries();
+        if (string.IsNullOrEmpty(school) || string.IsNullOrEmpty(className))
+        {
+            errorMessage = "Schule und Klasse müssen in deinem Profil eingetragen sein.";
+            return;
+        }
+
+        if (!TimeOnly.TryParse(startTimeString, out var startTime))
+        {
+            errorMessage = "Ungültiges Format für 'Von'. Bitte verwende HH:mm (z.B. 08:00).";
+            return;
+        }
+
+        if (!TimeOnly.TryParse(endTimeString, out var endTime))
+        {
+            errorMessage = "Ungültiges Format für 'Bis'. Bitte verwende HH:mm (z.B. 09:30).";
+            return;
+        }
+
+        if (!Enum.TryParse<DayOfWeek>(selectedDay, out var dayOfWeek))
+        {
+            errorMessage = "Ungültiger Wochentag.";
+            return;
+        }
+
+        saving = true;
+
+        try
+        {
+            var entry = new TimetableEntry
+            {
+                School = school,
+                ClassName = className,
+                DayOfWeek = dayOfWeek,
+                Period = period,
+                StartTime = startTime,
+                EndTime = endTime,
+                Subject = subject,
+                Teacher = teacher,
+                Room = room,
+            };
+
+            await TimetableService.UpsertEntryAsync(entry);
+
+            subject = "";
+            teacher = "";
+            room = "";
+            period++;
+            startTimeString = endTime.ToString("HH:mm");
+            endTimeString = endTime.AddHours(1).AddMinutes(30).ToString("HH:mm");
+            successMessage = "Eintrag gespeichert!";
+            await LoadEntries();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Fehler beim Speichern: {ex.Message}";
+        }
+        finally
+        {
+            saving = false;
+        }
     }
 
     private async Task ToggleCancelled(int id)
@@ -150,6 +237,7 @@
     private async Task DeleteEntry(int id)
     {
         await TimetableService.DeleteEntryAsync(id);
+        successMessage = "Eintrag gelöscht.";
         await LoadEntries();
     }
 
