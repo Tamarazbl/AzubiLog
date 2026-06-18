@@ -1,0 +1,142 @@
+@page "/konto"
+@attribute [Authorize]
+@inject AzubiLog.Services.Identity.ICurrentUserService CurrentUserService
+
+<PageTitle>Kontoübersicht – AzubiLog</PageTitle>
+
+<div class="page-header">
+    <h1>Kontoübersicht</h1>
+    <p class="subtitle">Verwalte deine Kontodaten, E-Mail-Adresse, Passwort und Arbeitszeiten.</p>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(QuerySaved))
+{
+    <div class="alert alert-success">
+        @(QuerySaved switch
+        {
+            "account" => "Kontodaten wurden gespeichert.",
+            "password" => "Dein Passwort wurde erfolgreich geändert.",
+            _ => "Änderungen gespeichert."
+        })
+    </div>
+}
+@if (!string.IsNullOrWhiteSpace(QueryError))
+{
+    <div class="alert alert-danger">
+        @(QueryError switch
+        {
+            "password-mismatch" => "Die Passwörter stimmen nicht überein.",
+            "password-wrong" => "Das aktuelle Passwort ist falsch.",
+            "password-invalid" => "Das neue Passwort erfüllt nicht die Anforderungen (mind. 8 Zeichen, Groß-/Kleinbuchstaben, Zahl).",
+            "email-taken" => "Diese E-Mail-Adresse wird bereits verwendet.",
+            _ => "Speichern fehlgeschlagen. Bitte prüfe deine Eingaben."
+        })
+    </div>
+}
+
+@if (user is not null)
+{
+    <div class="konto-profile-banner">
+        <div class="konto-avatar">@GetInitials()</div>
+        <div class="konto-profile-info">
+            <strong>@user.FirstName @user.LastName</strong>
+            <span>@user.TrainingOccupation</span>
+            <span>@user.School · @user.TrainingYear. Ausbildungsjahr</span>
+        </div>
+    </div>
+
+    <form method="post" action="/konto/update" class="konto-form">
+        <div class="card">
+            <h3>Persönliche Daten</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">Vorname</label>
+                    <input type="text" id="firstName" name="firstName" value="@user.FirstName" required maxlength="100" />
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Nachname</label>
+                    <input type="text" id="lastName" name="lastName" value="@user.LastName" required maxlength="100" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="email">E-Mail-Adresse</label>
+                <input type="email" id="email" name="email" value="@user.Email" required maxlength="256" />
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Arbeitszeiten & Urlaub</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="weeklyTargetHours">Wochenstunden (Soll)</label>
+                    <input type="number" id="weeklyTargetHours" name="weeklyTargetHours" value="@user.WeeklyTargetHours" step="0.5" min="1" max="80" />
+                </div>
+                <div class="form-group">
+                    <label for="annualVacationDays">Jahresurlaub (Tage)</label>
+                    <input type="number" id="annualVacationDays" name="annualVacationDays" value="@user.AnnualVacationDays" min="0" max="60" />
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Kontodaten speichern</button>
+    </form>
+
+    <form method="post" action="/konto/password" class="konto-form">
+        <div class="card konto-card-password">
+            <h3>Passwort ändern</h3>
+            <div class="form-group">
+                <label for="currentPassword">Aktuelles Passwort</label>
+                <input type="password" id="currentPassword" name="currentPassword" required />
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="newPassword">Neues Passwort</label>
+                    <input type="password" id="newPassword" name="newPassword" required minlength="8" maxlength="128" />
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Neues Passwort bestätigen</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" maxlength="128" />
+                </div>
+            </div>
+            <p class="konto-hint">Mindestens 8 Zeichen, ein Großbuchstabe, ein Kleinbuchstabe und eine Zahl.</p>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Passwort ändern</button>
+    </form>
+
+    <div class="card konto-card-session">
+        <h3>Sitzung</h3>
+        <p class="konto-session-text">Melde dich ab, um deine aktuelle Sitzung zu beenden.</p>
+        <form method="post" action="/account/logout/submit" class="inline-form">
+            <button type="submit" class="btn btn-outline konto-btn-logout">Abmelden</button>
+        </form>
+    </div>
+}
+else
+{
+    <p>Lade Kontoübersicht...</p>
+}
+
+@code {
+    private ApplicationUser? user;
+
+    [SupplyParameterFromQuery(Name = "saved")]
+    public string? QuerySaved { get; set; }
+
+    [SupplyParameterFromQuery(Name = "error")]
+    public string? QueryError { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        user = await CurrentUserService.GetRequiredUserAsync();
+    }
+
+    private string GetInitials()
+    {
+        if (user is null) return "?";
+        var f = string.IsNullOrWhiteSpace(user.FirstName) ? "" : user.FirstName[..1].ToUpperInvariant();
+        var l = string.IsNullOrWhiteSpace(user.LastName) ? "" : user.LastName[..1].ToUpperInvariant();
+        var initials = $"{f}{l}".Trim();
+        return string.IsNullOrEmpty(initials) ? "?" : initials;
+    }
+}
