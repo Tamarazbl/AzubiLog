@@ -1,0 +1,209 @@
+.account-page {
+    display: grid;
+    gap: 1.15rem;
+    margin-inline: auto;
+    max-width: 66rem;
+    padding: 1.4rem 0 2.5rem;
+}
+
+.account-loading {
+    color: var(--app-text-muted);
+    padding: 2rem 0;
+}
+
+.account-page-header p {
+    color: var(--app-primary);
+    font-size: 0.82rem;
+    font-weight: 680;
+    letter-spacing: 0;
+    margin: 0 0 0.35rem;
+}
+
+.account-page-header h1 {
+    color: var(--app-text);
+    font-size: 2rem;
+    font-weight: 850;
+    line-height: 1.1;
+    margin: 0;
+}
+
+.account-page-header span {
+    color: var(--app-text-muted);
+    display: block;
+    margin-top: 0.5rem;
+}
+
+.account-card {
+    background: var(--app-surface);
+    border: 1px solid color-mix(in srgb, var(--app-border) 62%, transparent);
+    border-radius: 8px;
+    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+}
+
+.account-info-card {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+}
+
+.account-avatar {
+    align-items: center;
+    background: var(--app-primary);
+    border-radius: 50%;
+    color: #fff;
+    display: flex;
+    flex-shrink: 0;
+    font-size: 1.2rem;
+    font-weight: 800;
+    height: 3.5rem;
+    justify-content: center;
+    width: 3.5rem;
+}
+
+.account-info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.account-info-text strong {
+    color: var(--app-text);
+    font-size: 1.12rem;
+    font-weight: 780;
+}
+
+.account-info-text span {
+    color: var(--app-text-muted);
+    font-size: 0.88rem;
+}
+
+.account-card-header {
+    align-items: start;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.account-card-header p,
+.account-card label > span {
+    color: var(--app-text-muted);
+    font-size: 0.82rem;
+    font-weight: 650;
+    margin: 0 0 0.35rem;
+}
+
+.account-card-header h2 {
+    color: var(--app-text);
+    font-size: 1.28rem;
+    font-weight: 850;
+    margin: 0;
+}
+
+.account-status {
+    background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface-muted));
+    border-radius: 8px;
+    color: var(--app-text);
+    font-size: 0.88rem;
+    padding: 0.45rem 0.6rem;
+    white-space: nowrap;
+}
+
+.account-status-error {
+    background: color-mix(in srgb, var(--app-danger) 12%, var(--app-surface-muted));
+    color: var(--app-danger);
+}
+
+.account-grid {
+    display: grid;
+    gap: 0.9rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.account-grid label {
+    display: grid;
+    min-width: 0;
+}
+
+.account-grid-wide {
+    grid-column: 1 / -1;
+}
+
+.account-card .form-control {
+    background-color: var(--app-bg);
+    border-color: color-mix(in srgb, var(--app-border) 70%, transparent);
+    border-radius: 8px;
+    color: var(--app-text);
+    min-height: 2.5rem;
+}
+
+.account-section-divider {
+    border-top: 1px solid color-mix(in srgb, var(--app-border) 58%, transparent);
+}
+
+.account-section-heading {
+    padding-top: 0.25rem;
+}
+
+.account-section-heading p {
+    color: var(--app-primary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+}
+
+.account-section-heading h3 {
+    color: var(--app-text);
+    font-size: 1.08rem;
+    font-weight: 820;
+    margin: 0;
+}
+
+.account-password-hint {
+    color: var(--app-text-muted);
+    font-size: 0.82rem;
+    margin: 0;
+}
+
+.account-actions {
+    border-top: 1px solid color-mix(in srgb, var(--app-border) 58%, transparent);
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 1rem;
+}
+
+.account-danger-zone {
+    border-color: color-mix(in srgb, var(--app-danger) 30%, transparent);
+}
+
+.account-danger-zone .account-card-header p {
+    color: var(--app-danger);
+}
+
+.account-danger-text {
+    color: var(--app-text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+@media (max-width: 760px) {
+    .account-card-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .account-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .account-actions .btn {
+        width: 100%;
+    }
+
+    .account-info-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}

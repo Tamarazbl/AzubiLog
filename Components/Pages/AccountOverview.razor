@@ -1,0 +1,155 @@
+@page "/konto"
+@attribute [Authorize(Policy = "ConfirmedEmail")]
+@inject IStringLocalizer<SharedResource> Localizer
+
+<PageTitle>@Localizer["AccountOverviewPageTitle"]</PageTitle>
+
+@if (ViewModel is null)
+{
+    <div class="account-loading">@Localizer["AccountOverviewLoading"]</div>
+}
+else
+{
+    <div class="account-page">
+        <header class="account-page-header">
+            <p>@Localizer["AccountOverviewEyebrow"]</p>
+            <h1>@Localizer["AccountOverviewPageTitle"]</h1>
+            <span>@Localizer["AccountOverviewIntro"]</span>
+        </header>
+
+        <section class="account-card account-info-card">
+            <div class="account-avatar">
+                <span>@GetInitials()</span>
+            </div>
+            <div class="account-info-text">
+                <strong>@ViewModel.FullName</strong>
+                <span>@ViewModel.TrainingOccupation</span>
+                <span>@ViewModel.CompanyName &middot; @Localizer["AccountOverviewTrainingYear", ViewModel.TrainingYear]</span>
+            </div>
+        </section>
+
+        <EditForm Model="AccountForm" FormName="account-form" OnValidSubmit="HandleSaveAccountAsync">
+            <DataAnnotationsValidator />
+
+            <section class="account-card">
+                <div class="account-card-header">
+                    <div>
+                        <p>@Localizer["AccountOverviewPersonalSection"]</p>
+                        <h2>@Localizer["AccountOverviewPersonalTitle"]</h2>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(AccountStatusMessage))
+                    {
+                        <span class="account-status @AccountStatusCss">@AccountStatusMessage</span>
+                    }
+                </div>
+
+                <div class="account-grid">
+                    <label>
+                        <span>@Localizer["AccountFirstName"] *</span>
+                        <InputText class="form-control" @bind-Value="AccountForm.FirstName" />
+                        <ValidationMessage For="() => AccountForm.FirstName" />
+                    </label>
+                    <label>
+                        <span>@Localizer["AccountLastName"] *</span>
+                        <InputText class="form-control" @bind-Value="AccountForm.LastName" />
+                        <ValidationMessage For="() => AccountForm.LastName" />
+                    </label>
+                    <label class="account-grid-wide">
+                        <span>@Localizer["AccountEmail"] *</span>
+                        <InputText class="form-control" type="email" @bind-Value="AccountForm.Email" />
+                        <ValidationMessage For="() => AccountForm.Email" />
+                    </label>
+                </div>
+
+                <div class="account-section-divider"></div>
+                <div class="account-section-heading">
+                    <p>@Localizer["AccountOverviewHoursSection"]</p>
+                    <h3>@Localizer["AccountOverviewHoursTitle"]</h3>
+                </div>
+
+                <div class="account-grid">
+                    <label>
+                        <span>@Localizer["ProfileWeeklyTargetHours"] *</span>
+                        <InputNumber class="form-control" @bind-Value="AccountForm.WeeklyTargetHours" />
+                        <ValidationMessage For="() => AccountForm.WeeklyTargetHours" />
+                    </label>
+                    <label>
+                        <span>@Localizer["ProfileAnnualVacationDays"] *</span>
+                        <InputNumber class="form-control" @bind-Value="AccountForm.AnnualVacationDays" />
+                        <ValidationMessage For="() => AccountForm.AnnualVacationDays" />
+                    </label>
+                </div>
+
+                <ValidationSummary />
+
+                <div class="account-actions">
+                    <button class="btn btn-primary" type="submit" disabled="@IsSavingAccount">
+                        @Localizer[IsSavingAccount ? "AccountOverviewSaving" : "AccountOverviewSave"]
+                    </button>
+                </div>
+            </section>
+        </EditForm>
+
+        <EditForm Model="PasswordForm" FormName="password-form" OnValidSubmit="HandleChangePasswordAsync">
+            <DataAnnotationsValidator />
+
+            <section class="account-card">
+                <div class="account-card-header">
+                    <div>
+                        <p>@Localizer["AccountOverviewSecuritySection"]</p>
+                        <h2>@Localizer["AccountOverviewPasswordTitle"]</h2>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(PasswordStatusMessage))
+                    {
+                        <span class="account-status @PasswordStatusCss">@PasswordStatusMessage</span>
+                    }
+                </div>
+
+                <div class="account-grid">
+                    <label class="account-grid-wide">
+                        <span>@Localizer["AccountOverviewCurrentPassword"] *</span>
+                        <InputText class="form-control" type="password" @bind-Value="PasswordForm.CurrentPassword" />
+                        <ValidationMessage For="() => PasswordForm.CurrentPassword" />
+                    </label>
+                    <label>
+                        <span>@Localizer["AccountOverviewNewPassword"] *</span>
+                        <InputText class="form-control" type="password" @bind-Value="PasswordForm.NewPassword" />
+                        <ValidationMessage For="() => PasswordForm.NewPassword" />
+                    </label>
+                    <label>
+                        <span>@Localizer["AccountOverviewConfirmPassword"] *</span>
+                        <InputText class="form-control" type="password" @bind-Value="PasswordForm.ConfirmPassword" />
+                        <ValidationMessage For="() => PasswordForm.ConfirmPassword" />
+                    </label>
+                </div>
+
+                <p class="account-password-hint">@Localizer["AccountOverviewPasswordHint"]</p>
+
+                <ValidationSummary />
+
+                <div class="account-actions">
+                    <button class="btn btn-primary" type="submit" disabled="@IsChangingPassword">
+                        @Localizer[IsChangingPassword ? "AccountOverviewPasswordChanging" : "AccountOverviewPasswordChange"]
+                    </button>
+                </div>
+            </section>
+        </EditForm>
+
+        <section class="account-card account-danger-zone">
+            <div class="account-card-header">
+                <div>
+                    <p>@Localizer["AccountOverviewDangerSection"]</p>
+                    <h2>@Localizer["AccountOverviewDangerTitle"]</h2>
+                </div>
+            </div>
+
+            <p class="account-danger-text">@Localizer["AccountOverviewLogoutHint"]</p>
+
+            <div class="account-actions">
+                <a class="btn btn-outline-danger" href="account/logout">
+                    @Localizer["AccountLogoutAction"]
+                </a>
+            </div>
+        </section>
+    </div>
+}

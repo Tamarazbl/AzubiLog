@@ -11,6 +11,7 @@ public class ApplicationNavigationService : IApplicationNavigationService
         new("NavWeeklyReportsVertical", "weekly-reports/vertical", "bi-list-nested-nav-menu", true),
         new("NavTodos", "todos", "bi-list-nested-nav-menu", true),
         new("NavHistory", "history", "bi-list-nested-nav-menu", false),
+        new("NavAccountOverview", "konto", "bi-person-circle-nav-menu", true),
         new("NavSettings", "settings", "bi-gear-fill-nav-menu", true)
     ];
 
