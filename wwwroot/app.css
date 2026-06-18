@@ -766,6 +766,90 @@ a:hover { color: var(--accent-hover); }
 
 .profile-form .card { margin-bottom: 0; }
 
+/* === Kontoübersicht === */
+.konto-profile-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.konto-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    color: white;
+    font-weight: 800;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.konto-profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.konto-profile-info strong {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.konto-profile-info span {
+    font-size: .85rem;
+    color: var(--text-muted);
+}
+
+.konto-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.konto-form .card { margin-bottom: 0; }
+
+.konto-hint {
+    font-size: .82rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.konto-card-session {
+    margin-bottom: 16px;
+}
+
+.konto-session-text {
+    font-size: .9rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+}
+
+.konto-btn-logout {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+.konto-btn-logout:hover {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+@media (max-width: 768px) {
+    .konto-profile-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
 /* === Utilities === */
 .text-muted { color: var(--text-muted); }
 .mt-2 { margin-top: 8px; }

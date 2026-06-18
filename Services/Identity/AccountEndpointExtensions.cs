@@ -91,6 +91,80 @@ public static class AccountEndpointExtensions
             return Results.Redirect(result.Succeeded ? "/account/profile?saved=true" : "/account/profile?error=failed");
         }).RequireAuthorization().DisableAntiforgery();
 
+        endpoints.MapPost("/konto/update", async (
+            HttpContext context,
+            ICurrentUserService currentUserService,
+            UserManager<ApplicationUser> userManager) =>
+        {
+            var user = await currentUserService.GetRequiredUserAsync(context.RequestAborted);
+            var form = await context.Request.ReadFormAsync();
+
+            user.FirstName = form["firstName"].ToString().Trim();
+            user.LastName = form["lastName"].ToString().Trim();
+            user.WeeklyTargetHours = double.TryParse(form["weeklyTargetHours"], out var h) ? h : 40;
+            user.AnnualVacationDays = int.TryParse(form["annualVacationDays"], out var d) ? d : 30;
+
+            var newEmail = form["email"].ToString().Trim();
+            var currentEmail = user.Email ?? string.Empty;
+
+            if (!string.Equals(currentEmail, newEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                var existing = await userManager.FindByEmailAsync(newEmail);
+                if (existing is not null && existing.Id != user.Id)
+                {
+                    return Results.Redirect("/konto?error=email-taken");
+                }
+
+                var emailResult = await userManager.SetEmailAsync(user, newEmail);
+                if (!emailResult.Succeeded)
+                {
+                    return Results.Redirect("/konto?error=failed");
+                }
+
+                await userManager.SetUserNameAsync(user, newEmail);
+            }
+
+            var result = await userManager.UpdateAsync(user);
+            return Results.Redirect(result.Succeeded ? "/konto?saved=account" : "/konto?error=failed");
+        }).RequireAuthorization().DisableAntiforgery();
+
+        endpoints.MapPost("/konto/password", async (
+            HttpContext context,
+            ICurrentUserService currentUserService,
+            UserManager<ApplicationUser> userManager) =>
+        {
+            var user = await currentUserService.GetRequiredUserAsync(context.RequestAborted);
+            var form = await context.Request.ReadFormAsync();
+
+            var currentPassword = form["currentPassword"].ToString();
+            var newPassword = form["newPassword"].ToString();
+            var confirmPassword = form["confirmPassword"].ToString();
+
+            if (string.IsNullOrWhiteSpace(currentPassword)
+                || string.IsNullOrWhiteSpace(newPassword))
+            {
+                return Results.Redirect("/konto?error=failed");
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                return Results.Redirect("/konto?error=password-mismatch");
+            }
+
+            if (!await userManager.CheckPasswordAsync(user, currentPassword))
+            {
+                return Results.Redirect("/konto?error=password-wrong");
+            }
+
+            var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+            if (result.Succeeded)
+            {
+                return Results.Redirect("/konto?saved=password");
+            }
+
+            return Results.Redirect("/konto?error=password-invalid");
+        }).RequireAuthorization().DisableAntiforgery();
+
         endpoints.MapGet("/api/export/weekly/{year:int}/{week:int}", async (
             int year, int week,
             ICurrentUserService currentUserService,
