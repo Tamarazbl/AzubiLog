@@ -49,7 +49,17 @@ namespace AzubiLog
             builder.Services.AddScoped<ApplicationDataInitializer>();
             builder.Services.AddScoped<DefaultUserData>();
             builder.Services.AddScoped<AccountFlowService>();
-            builder.Services.AddScoped<IAccountEmailSender, DevelopmentAccountEmailSender>();
+            builder.Services.AddHttpClient();
+            builder.Services.Configure<BrevoSettings>(options =>
+            {
+                builder.Configuration.GetSection("Brevo").Bind(options);
+                var envKey = Environment.GetEnvironmentVariable("BREVO_API_KEY");
+                if (!string.IsNullOrWhiteSpace(envKey))
+                {
+                    options.ApiKey = envKey;
+                }
+            });
+            builder.Services.AddScoped<IAccountEmailSender, BrevoEmailSender>();
             builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
             builder.Services.AddScoped<ICalendarDayMarkerService, CalendarDayMarkerService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
@@ -80,7 +90,7 @@ namespace AzubiLog
 
             builder.Services.AddIdentityCore<ApplicationUser>(options =>
                 {
-                    options.SignIn.RequireConfirmedAccount = true;
+                    options.SignIn.RequireConfirmedAccount = false;
                     options.User.RequireUniqueEmail = true;
                     options.Password.RequiredLength = 8;
                     options.Password.RequireNonAlphanumeric = false;
